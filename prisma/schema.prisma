@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         String   @default("viewer")
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  audits       AuditLog[]
+}
+
+model Pipeline {
+  id               String   @id @default(cuid())
+  name             String
+  repoUrl          String
+  repoBranch       String   @default("main")
+  path             String?
+  terraformVersion String?
+  variables        String?
+  status           String   @default("active")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  runs             Run[]
+}
+
+model Run {
+  id          String   @id @default(cuid())
+  pipelineId  String
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id])
+  type        String   @default("plan")
+  status      String   @default("queued")
+  initiatedBy String
+  startTime   DateTime?
+  endTime     DateTime?
+  exitCode    Int?
+  logsUrl     String?
+  planOutput  String?
+  applyOutput String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  artifacts   Artifact[]
+}
+
+model Artifact {
+  id        String   @id @default(cuid())
+  runId     String
+  run       Run      @relation(fields: [runId], references: [id])
+  type      String   @default("plan")
+  location  String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  metadata  String?
+  createdAt DateTime @default(now())
+}
